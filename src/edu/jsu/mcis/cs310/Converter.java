@@ -2,6 +2,10 @@ package edu.jsu.mcis.cs310;
 
 import com.github.cliftonlabs.json_simple.*;
 import com.opencsv.*;
+import java.io.StringReader;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 public class Converter {
     
@@ -79,12 +83,63 @@ public class Converter {
         try {
         
             // INSERT YOUR CODE HERE
+            // Initialize Json objects and Json arrays
+            //JsonObject jsonObject = new JsonObject();
+            // Created jsonObject as LinkedHashMap instead to match the ordering of the file. 
+            LinkedHashMap<String, Object> jsonObject = new LinkedHashMap<>();
+            JsonArray prodNums = new JsonArray();
+            JsonArray colHeadings = new JsonArray();
+            JsonArray data = new JsonArray();
             
+            // Create a CSVReader object by passing csvString as a StringReader object to parse the csvString.
+            // Use the CSVReader's readAll() to read each line as an array and store it in a List. 
+            CSVReader reader = new CSVReader(new StringReader(csvString));
+            List<String[]> csvList = reader.readAll();
+            
+            // Populate colHeadings arrray
+            Iterator<String[]> iterator = csvList.iterator();
+            String[] heading = iterator.next();
+            for (String field:heading){
+                colHeadings.add(field.trim());
+            }
+            
+            // Populate prodNums and data array
+            while (iterator.hasNext()){
+                String[] csvRecord = iterator.next();// Stores each line of CSV file as a string array
+                JsonArray csvData = new JsonArray();// Create a new Jason array to populate "data" array as List of arrays.
+                prodNums.add(csvRecord[0].trim());// Stores first enty of each line in ProdNums
+                csvData.add(csvRecord[1]);// Stores next entry in csvData 
+                
+                // Loop through next two entries and convert them to integers
+                for(int i=2; i<4; ++i){
+                    csvData.add(Integer.valueOf(csvRecord[i]));
+                }
+                // Loop through remaining entries and add them to csVData
+                for(int j=4; j<csvRecord.length; ++j) {
+                    csvData.add(csvRecord[j].trim());
+                }
+                /*data.add(csvRecord[1].trim());
+                for(int i=2; i<4; ++i){
+                    data.add(Integer.valueOf(csvRecord[i]));
+                }
+                for(int j=4; j<csvRecord.length; ++j) {
+                    data.add(csvRecord[j].trim());
+                }*/
+                data.add(csvData);//add csvData array to data array to preserve structure. 
+            }
+            
+            // Add json arrays to jsonobject
+            jsonObject.put("ProdNums", prodNums);
+            jsonObject.put("ColHeadings", colHeadings);
+            jsonObject.put("Data", data);
+            
+            // Serialize json object and store them in result
+            result = Jsoner.serialize(jsonObject);
         }
         catch (Exception e) {
             e.printStackTrace();
         }
-        
+        //System.out.println(result.trim());
         return result.trim();
         
     }
