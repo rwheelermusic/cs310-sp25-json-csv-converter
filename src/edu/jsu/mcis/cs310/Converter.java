@@ -3,6 +3,7 @@ package edu.jsu.mcis.cs310;
 import com.github.cliftonlabs.json_simple.*;
 import com.opencsv.*;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -97,7 +98,7 @@ public class Converter {
             List<String[]> csvList = reader.readAll();
             
             // Populate colHeadings arrray
-            Iterator<String[]> iterator = csvList.iterator();
+            Iterator<String[]> iterator = csvList.iterator();// Create Iterator object loop through elements in csvList.
             String[] heading = iterator.next();
             for (String field:heading){
                 colHeadings.add(field.trim());
@@ -105,16 +106,16 @@ public class Converter {
             
             // Populate prodNums and data array
             while (iterator.hasNext()){
-                String[] csvRecord = iterator.next();// Stores each line of CSV file as a string array
-                JsonArray csvData = new JsonArray();// Create a new Jason array to populate "data" array as List of arrays.
-                prodNums.add(csvRecord[0].trim());// Stores first enty of each line in ProdNums
-                csvData.add(csvRecord[1]);// Stores next entry in csvData 
+                String[] csvRecord = iterator.next();// Stores each line of CSV file as a string array.
+                JsonArray csvData = new JsonArray();// Creates a new Jason array to later populate "data" array in the correct format.
+                prodNums.add(csvRecord[0].trim());// Store first enty of each line in ProdNums.
+                csvData.add(csvRecord[1]);// Store next entry in csvData.
                 
-                // Loop through next two entries and convert them to integers
+                // Loop through next two entries and convert them to integers. Add them to csvData.
                 for(int i=2; i<4; ++i){
                     csvData.add(Integer.valueOf(csvRecord[i]));
                 }
-                // Loop through remaining entries and add them to csVData
+                // Loop through remaining entries and add them to csVData.
                 for(int j=4; j<csvRecord.length; ++j) {
                     csvData.add(csvRecord[j].trim());
                 }
@@ -125,7 +126,7 @@ public class Converter {
                 for(int j=4; j<csvRecord.length; ++j) {
                     data.add(csvRecord[j].trim());
                 }*/
-                data.add(csvData);//add csvData array to data array to preserve structure. 
+                data.add(csvData);//add each CSV array to data.  
             }
             
             // Add json arrays to jsonobject
@@ -152,12 +153,52 @@ public class Converter {
         try {
             
             // INSERT YOUR CODE HERE
+            // Declare/Initialze varaibles
+            // Create JsonObject to deserialze jsonString
+            JsonObject jsonObject = Jsoner.deserialize(jsonString, new JsonObject());
+            // Grab JsonArrays from jsonObject. 
+            JsonArray colHeadings = (JsonArray) jsonObject.get("ColHeadings");
+            JsonArray prodNums = (JsonArray) jsonObject.get("ProdNums");
+            JsonArray data = (JsonArray) jsonObject.get("Data");
+           
+            // Create a StringWriter object and use it to initialize a CSVWriter.
+            StringWriter writer = new StringWriter();
+            CSVWriter csvWriter = new CSVWriter(writer);
+            
+            // Create String array for the key values from "ColHeadings".
+            String[] header = new String[colHeadings.size()];
+            for (int i =0; i<colHeadings.size(); ++i){
+                 header[i] = colHeadings.getString(i);  
+            }
+            csvWriter.writeNext(header);// add header to CSVWriter.
+            
+            // Create a String array for the remaining row values.
+            String[] rowValues = new String[colHeadings.size()];
+            
+            // Populate rowValues with with the remaining key values.
+            for (int i=0; i<data.size(); ++i){
+                // Create JsonArray for arrays in "data".
+                JsonArray dataArrays = (JsonArray) data.get(i);
+                rowValues[0] = prodNums.getString(i); // Add "ProdNums" values to row
+                // Loop trough entries in dataArrays and add them to rowValues
+                for (int j=0; j <dataArrays.size(); ++j){
+                    if(j == 2){
+                        // Convert the Episode entry to the correct format
+                        rowValues[j+1] = String.format("%02d", Integer.parseInt(dataArrays.get(j).toString()));
+                    } else{
+                        rowValues[j+1] = dataArrays.getString(j);
+                    } 
+                }
+                csvWriter.writeNext(rowValues);// Add row values to csvWriter.
+            }
+          
+            result = writer.toString();// export final csvString and store it in result. 
             
         }
         catch (Exception e) {
             e.printStackTrace();
         }
-        
+        //System.out.println(result);
         return result.trim();
         
     }
